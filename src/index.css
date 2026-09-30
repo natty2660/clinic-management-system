@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@layer base {
+  /* ESC/POS Thermal Printing and Standard Printer Styles */
+  @media print {
+    body {
+      background-color: #ffffff !important;
+      color: #000000 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    header,
+    nav,
+    .no-print,
+    button:not(.print-allow) {
+      display: none !important;
+    }
+
+    .thermal-slip {
+      box-shadow: none !important;
+      border: none !important;
+      width: 100% !important;
+      max-width: 80mm !important;
+      margin: 0 auto !important;
+      padding: 4mm !important;
+      font-size: 11px !important;
+      color: #000000 !important;
+    }
+  }
+}

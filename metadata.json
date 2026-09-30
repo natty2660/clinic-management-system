@@ -1,0 +1,6 @@
+{
+  "name": "Clinic Connection System - Multi-Department Clinic Server",
+  "description": "Real-time multi-role clinic management system connecting Cashier, Doctor, Nurse, Laboratory, Pharmacy, and Admin with strict payment gates, live queues, batch stock control, and audit trails.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
