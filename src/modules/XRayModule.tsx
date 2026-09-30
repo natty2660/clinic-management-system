@@ -84,6 +84,10 @@ export const XRayModule: React.FC<XRayModuleProps> = ({
   });
 
   const handleCompleteXRay = (order: XRayOrder) => {
+    if (order.paymentStatus !== 'paid') {
+      alert('Diagnostic Gate Block: X-Ray imaging cannot be authorized or released without invoice payment at Cashier.');
+      return;
+    }
     if (!findingsText.trim() || !impressionText.trim()) {
       alert('Please fill out findings and clinical impression before authorizing the radiograph.');
       return;
@@ -174,9 +178,9 @@ export const XRayModule: React.FC<XRayModuleProps> = ({
       </div>
 
       {/* Main Layout Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Worklist Column (4 Cols) */}
-        <div className="lg:col-span-4 space-y-3">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Worklist Column (4 Cols) - Independent Sticky Queue */}
+        <div className="lg:col-span-4 lg:sticky lg:top-4 space-y-3">
           <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs space-y-3">
             <div className="flex justify-between items-center border-b border-slate-100 pb-2.5">
               <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
@@ -224,7 +228,7 @@ export const XRayModule: React.FC<XRayModuleProps> = ({
             </div>
           </div>
 
-          <div className="space-y-2.5 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
+          <div className="space-y-2.5 h-[calc(100vh-270px)] overflow-y-auto pr-1">
             {filteredOrders.length === 0 ? (
               <div className="p-8 bg-white rounded-2xl border border-slate-200 text-center text-slate-400 text-xs">
                 No X-Ray orders matching filter.

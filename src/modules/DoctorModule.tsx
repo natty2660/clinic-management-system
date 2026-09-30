@@ -283,8 +283,8 @@ export const DoctorModule: React.FC<DoctorModuleProps> = ({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-      {/* LEFT COLUMN: LIVE OPD PATIENT QUEUE (4 Cols) */}
-      <div className="lg:col-span-4 space-y-3">
+      {/* LEFT COLUMN: LIVE OPD PATIENT QUEUE (4 Cols) - Independent Sticky Queue */}
+      <div className="lg:col-span-4 lg:sticky lg:top-4 space-y-3">
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
@@ -312,8 +312,8 @@ export const DoctorModule: React.FC<DoctorModuleProps> = ({
           </p>
         </div>
 
-        {/* Queue List */}
-        <div className="space-y-2 max-h-[calc(100vh-270px)] overflow-y-auto pr-1">
+        {/* Queue List - Fixed independent height scroll container */}
+        <div className="space-y-2 h-[calc(100vh-210px)] overflow-y-auto pr-1">
           {filteredQueue.length === 0 ? (
             <div className="bg-white rounded-xl p-8 text-center border border-slate-200 text-slate-500">
               <Clock className="w-8 h-8 text-slate-300 mx-auto mb-2" />

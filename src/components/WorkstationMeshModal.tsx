@@ -25,6 +25,14 @@ import {
 import { DatabaseState, WorkstationConfig, User as ClinicUser } from '../types/clinic';
 import { clinicSocket } from '../utils/storage';
 import { formatDateTime } from '../utils/formatters';
+import {
+  downloadLocalDatabaseSnapshot,
+  getLanServerConfig,
+  pingLanServer,
+  pushDatabaseToLanServer,
+  pullDatabaseFromLanServer,
+} from '../utils/lanDatabaseSync';
+import { Download, Server, CloudDownload, CloudUpload } from 'lucide-react';
 
 interface WorkstationMeshModalProps {
   isOpen: boolean;
@@ -260,13 +268,26 @@ export const WorkstationMeshModal: React.FC<WorkstationMeshModalProps> = ({
           </div>
         </div>
 
-        <div className="flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl text-xs transition"
-          >
-            Close Diagnostics
-          </button>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => downloadLocalDatabaseSnapshot(db)}
+              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition flex items-center gap-1.5 border border-slate-200"
+              title="Download clean offline JSON backup of clinic state"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-600" />
+              <span>Export Database Backup (.json)</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <button
+              onClick={onClose}
+              className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl text-xs transition"
+            >
+              Close Diagnostics
+            </button>
+          </div>
         </div>
       </div>
     </div>

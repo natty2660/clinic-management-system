@@ -76,6 +76,12 @@ export const LaboratoryModule: React.FC<LaboratoryModuleProps> = ({
 
   // Workflow Action 1: Sample Taken
   const handleTakeSample = (order: LabOrder) => {
+    // Strict payment check: Laboratory processing cannot begin without cashier payment or authorized emergency override
+    if (order.paymentStatus !== 'paid' && !order.overridden) {
+      alert('Laboratory Gate Block: Phlebotomy and sample intake require invoice settlement at Cashier or an authorized Emergency Override.');
+      return;
+    }
+
     onUpdateDb((prev) => ({
       ...prev,
       labOrders: prev.labOrders.map((o) =>
@@ -85,6 +91,7 @@ export const LaboratoryModule: React.FC<LaboratoryModuleProps> = ({
               status: 'sample_taken' as const,
               sampleTakenAt: new Date().toISOString(),
               sampleTakenBy: currentUser.name,
+              version: (o.version || 1) + 1,
             }
           : o
       ),
@@ -218,9 +225,9 @@ export const LaboratoryModule: React.FC<LaboratoryModuleProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      {/* LEFT COLUMN: REQUEST QUEUE (5 Cols) */}
-      <div className="lg:col-span-5 space-y-4">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* LEFT COLUMN: REQUEST QUEUE (5 Cols) - Independent Sticky Scroll */}
+      <div className="lg:col-span-5 lg:sticky lg:top-4 space-y-4">
         <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
           <div className="flex justify-between items-center mb-1">
             <div className="flex items-center gap-2">
@@ -236,8 +243,8 @@ export const LaboratoryModule: React.FC<LaboratoryModuleProps> = ({
           </p>
         </div>
 
-        {/* Orders list */}
-        <div className="space-y-2.5 max-h-[calc(100vh-280px)] overflow-y-auto">
+        {/* Orders list - Fixed independent height scroll container */}
+        <div className="space-y-2.5 h-[calc(100vh-210px)] overflow-y-auto pr-1">
           {db.labOrders.length === 0 ? (
             <div className="bg-white rounded-xl p-8 text-center border border-slate-200 text-slate-400">
               No lab test requests in the system.

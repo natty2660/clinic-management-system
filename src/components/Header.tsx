@@ -4,8 +4,6 @@ import {
   Radio,
   Volume2,
   VolumeX,
-  Wifi,
-  WifiOff,
   Clock,
   Shield,
   Stethoscope,
@@ -13,16 +11,12 @@ import {
   FlaskConical,
   Pill,
   HeartPulse,
-  Settings,
   ChevronDown,
   UserCheck,
   Lock,
-  Printer,
   Coins,
-  Sliders,
   ScanLine,
   Microscope,
-  Zap,
 } from 'lucide-react';
 import { Role, User, ClinicSettings, WorkstationConfig } from '../types/clinic';
 import { clinicAudio } from '../utils/audio';
@@ -34,15 +28,15 @@ interface HeaderProps {
   onUserChange: (user: User) => void;
   allUsers: User[];
   settings: ClinicSettings;
-  isOnline: boolean;
-  networkMode: 'online' | 'intermittent' | 'offline';
-  onOpenSyncDrawer: () => void;
-  onOpenWsDrawer: () => void;
-  wsEventCount: number;
-  offlineQueueDepth: number;
+  isOnline?: boolean;
+  networkMode?: 'online' | 'intermittent' | 'offline';
+  onOpenSyncDrawer?: () => void;
+  onOpenWsDrawer?: () => void;
+  wsEventCount?: number;
+  offlineQueueDepth?: number;
   currentWorkstation?: WorkstationConfig;
-  onOpenWorkstationSettings: () => void;
-  onLockScreen: () => void;
+  onOpenWorkstationSettings?: () => void;
+  onLockScreen?: () => void;
   onOpenMeshDiagnostics?: () => void;
 }
 
@@ -53,16 +47,9 @@ export const Header: React.FC<HeaderProps> = ({
   onUserChange,
   allUsers,
   settings,
-  isOnline,
-  networkMode,
-  onOpenSyncDrawer,
-  onOpenWsDrawer,
-  wsEventCount,
-  offlineQueueDepth,
   currentWorkstation,
   onOpenWorkstationSettings,
   onLockScreen,
-  onOpenMeshDiagnostics,
 }) => {
   const [time, setTime] = useState<string>('');
   const [isSoundOn, setIsSoundOn] = useState<boolean>(true);
@@ -159,14 +146,14 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-2.5 flex-wrap">
           {/* Clinic Brand */}
           <div className="flex items-center gap-1.5 text-teal-400 font-bold tracking-wide">
-            <span className="w-2 h-2 rounded-full bg-teal-400 animate-ping"></span>
-            <span>{settings.clinicName}</span>
+            <span className="w-2 h-2 rounded-full bg-teal-400"></span>
+            <span className="text-white font-extrabold">{settings.clinicName}</span>
           </div>
 
           <span className="text-slate-700 hidden sm:inline">|</span>
 
           {/* Currency Badge - Exclusively Ethiopian Birr (ETB) */}
-          <div className="flex items-center gap-1 font-mono text-[11px] bg-emerald-950/80 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800/70 font-bold">
+          <div className="flex items-center gap-1 font-mono text-[11px] bg-slate-900 text-emerald-400 px-2 py-0.5 rounded border border-slate-800 font-bold">
             <Coins className="w-3 h-3 text-emerald-400" />
             <span>ETB (Ethiopian Birr / Br)</span>
           </div>
@@ -176,62 +163,17 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Active Terminal ID & Hardware Mapping */}
           <button
             onClick={onOpenWorkstationSettings}
-            className="flex items-center gap-1 font-mono text-[11px] bg-slate-900 hover:bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700 transition"
+            className="flex items-center gap-1 font-mono text-[11px] bg-slate-900 hover:bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-800 transition"
             title="Configure Active Desktop Workstation ID & Printer Mapping"
           >
             <Laptop className="w-3 h-3 text-teal-400" />
             <span className="font-bold">{currentWorkstation?.id || settings.activeWorkstationId || 'SPEED-WS-01'}</span>
             <span className="text-slate-500 hidden md:inline">({currentWorkstation?.roomOrCounter || 'Counter 1'})</span>
-            <Sliders className="w-3 h-3 ml-0.5 text-slate-400" />
-          </button>
-
-          <span className="text-slate-700 hidden sm:inline">|</span>
-
-          {/* LAN Mesh Zero-Lag Status Indicator & Connection Diagnostics */}
-          <button
-            onClick={onOpenMeshDiagnostics}
-            className="flex items-center gap-1.5 font-mono text-[11px] bg-teal-950/80 hover:bg-teal-900 text-teal-300 px-2.5 py-0.5 rounded-full border border-teal-700/60 font-bold transition shadow-xs"
-            title="Check Connection Between All PCs & Latency Diagnostics"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-ping"></span>
-            <Zap className="w-3 h-3 text-teal-400" />
-            <span>LAN Mesh: 0ms (9 PCs Connected)</span>
           </button>
         </div>
 
         {/* Right side controls */}
-        <div className="flex items-center gap-2.5">
-          {/* Network online/offline status & buffer indicator */}
-          <button
-            onClick={onOpenSyncDrawer}
-            className={`flex items-center gap-1.5 px-2 py-0.5 rounded font-medium text-[11px] transition cursor-pointer ${
-              networkMode === 'online'
-                ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800'
-                : networkMode === 'intermittent'
-                ? 'bg-amber-950/80 text-amber-300 border border-amber-800 animate-pulse'
-                : 'bg-red-950/80 text-red-300 border border-red-800 animate-pulse'
-            }`}
-            title="Click to view offline transaction buffer and simulate network conditions"
-          >
-            {networkMode === 'online' ? (
-              <Wifi className="w-3 h-3 text-emerald-400" />
-            ) : (
-              <WifiOff className="w-3 h-3 text-red-400" />
-            )}
-            <span>
-              {networkMode === 'online'
-                ? 'LAN Online (TLS 1ms)'
-                : networkMode === 'intermittent'
-                ? 'Intermittent LAN'
-                : 'LAN Severed'}
-            </span>
-            {offlineQueueDepth > 0 && (
-              <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-1.5 rounded-full">
-                {offlineQueueDepth}
-              </span>
-            )}
-          </button>
-
+        <div className="flex items-center gap-3">
           {/* Sound Toggle */}
           <button
             onClick={toggleSound}
@@ -245,31 +187,18 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {/* Live WS Drawer button */}
-          <button
-            onClick={onOpenWsDrawer}
-            className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 transition text-[11px]"
-            title="View Real-Time Multi-User LAN Event Stream"
-          >
-            <Radio className="w-3 h-3 text-emerald-400" />
-            <span className="hidden sm:inline">LAN Bus</span>
-            <span className="bg-teal-600 text-white font-mono text-[10px] px-1.5 rounded-full">
-              {wsEventCount}
-            </span>
-          </button>
-
           {/* Station Screen Lock */}
           <button
             onClick={onLockScreen}
-            className="flex items-center gap-1 px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded text-[11px] transition"
+            className="flex items-center gap-1 px-2.5 py-0.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white rounded border border-slate-800 text-[11px] transition"
             title="Lock terminal screen immediately (PIN required to unlock)"
           >
             <Lock className="w-3 h-3 text-amber-400" />
-            <span className="hidden sm:inline">Lock</span>
+            <span>Lock</span>
           </button>
 
           {/* Clock */}
-          <div className="flex items-center gap-1 font-mono text-slate-300 hidden md:flex">
+          <div className="flex items-center gap-1 font-mono text-slate-300">
             <Clock className="w-3 h-3 text-slate-500" />
             <span>{time}</span>
           </div>

@@ -38,7 +38,7 @@ import {
 } from '../types/clinic';
 import { clinicAudio } from './audio';
 
-const STORAGE_KEY = 'SPEED_CIS_DATABASE_V2';
+export const STORAGE_KEY = 'SPEED_CIS_DATABASE_V2';
 
 export type { DatabaseState };
 

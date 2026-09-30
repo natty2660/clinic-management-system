@@ -146,10 +146,33 @@ export const OpdDispensingTab: React.FC<OpdDispensingTabProps> = ({
       }
     }
 
-    // 3. Process Dispensing & Decrement Stock
+    // 3. Process Dispensing & Decrement Stock atomically
+    let stockViolationMessage: string | null = null;
     const movements: StockMovement[] = [];
 
     onUpdateDb((prev) => {
+      // Re-verify payment and prescription status on latest DB snapshot
+      const currentRx = prev.prescriptions.find((p) => p.id === rx.id);
+      if (!currentRx || (currentRx.paymentStatus !== 'paid' && currentRx.paymentStatus !== 'overridden')) {
+        stockViolationMessage = 'Dispensing halted: Prescription is not paid on the central database.';
+        return prev;
+      }
+      if (currentRx.status === 'dispensed') {
+        stockViolationMessage = 'Prescription has already been dispensed by another pharmacist counter.';
+        return prev;
+      }
+
+      // Check stock availability on latest DB snapshot before decrementing
+      for (const item of rx.items) {
+        const med = prev.medicines.find((m) => m.id === item.medicineId);
+        const chosenBatchId = selectedBatches[item.id];
+        const batch = med?.batches.find((b) => b.id === chosenBatchId);
+        if (!batch || batch.quantity < item.quantity) {
+          stockViolationMessage = `Insufficient stock in batch ${batch?.batchNumber || 'unknown'}. Available: ${batch?.quantity || 0}, Needed: ${item.quantity}.`;
+          return prev;
+        }
+      }
+
       const updatedMedicines = prev.medicines.map((med) => {
         let medModified = false;
         const newBatches = med.batches.map((batch) => {
@@ -158,7 +181,7 @@ export const OpdDispensingTab: React.FC<OpdDispensingTabProps> = ({
           );
           if (matchingItem) {
             medModified = true;
-            const newQty = batch.quantity - matchingItem.quantity;
+            const newQty = Math.max(0, batch.quantity - matchingItem.quantity);
 
             movements.push({
               id: `sm_${Date.now()}_${batch.id}`,
@@ -189,6 +212,7 @@ export const OpdDispensingTab: React.FC<OpdDispensingTabProps> = ({
               status: 'dispensed' as const,
               dispensedAt: new Date().toISOString(),
               dispensedBy: currentUser.name,
+              version: (p.version || 1) + 1,
               items: p.items.map((it) => ({
                 ...it,
                 dispensedBatchId: selectedBatches[it.id],
@@ -205,6 +229,11 @@ export const OpdDispensingTab: React.FC<OpdDispensingTabProps> = ({
         stockMovements: [...movements, ...prev.stockMovements],
       };
     });
+
+    if (stockViolationMessage) {
+      alert(stockViolationMessage);
+      return;
+    }
 
     broadcast(
       'MEDICINE_DISPENSED',
@@ -270,9 +299,9 @@ export const OpdDispensingTab: React.FC<OpdDispensingTabProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      {/* Left Column: Worklist Queue (5 Cols) */}
-      <div className="lg:col-span-5 space-y-4">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* Left Column: Worklist Queue (5 Cols) - Independent Sticky Queue */}
+      <div className="lg:col-span-5 lg:sticky lg:top-4 space-y-4">
         {/* Queue Filter Tabs & Search */}
         <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-xs space-y-3">
           <div className="flex rounded-lg bg-slate-100 p-1 text-xs">
@@ -330,8 +359,8 @@ export const OpdDispensingTab: React.FC<OpdDispensingTabProps> = ({
           </div>
         </div>
 
-        {/* Prescription List */}
-        <div className="space-y-2.5 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
+        {/* Prescription List - Fixed independent height scroll container */}
+        <div className="space-y-2.5 h-[calc(100vh-250px)] overflow-y-auto pr-1">
           {filteredPrescriptions.length === 0 ? (
             <div className="p-8 bg-white rounded-xl border border-slate-200 text-center text-slate-400 text-xs">
               No prescriptions found matching filter.

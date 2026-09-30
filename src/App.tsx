@@ -18,18 +18,11 @@ import {
 import { Header } from './components/Header';
 import { PrintModal, PrintContentType } from './components/PrintModal';
 import { EmergencyOverrideModal } from './components/EmergencyOverrideModal';
-import { WebSocketActivityDrawer } from './components/WebSocketActivityDrawer';
 import { StatusExchangeBar } from './components/StatusExchangeBar';
-import { PhaseRoadmapModal } from './components/PhaseRoadmapModal';
-import { Phase1GuidedRunner } from './components/Phase1GuidedRunner';
-import { Phase2GuidedRunner } from './components/Phase2GuidedRunner';
-import { Phase3GuidedRunner } from './components/Phase3GuidedRunner';
 import { ConcurrencyConflictModal } from './components/ConcurrencyConflictModal';
 import { WorkstationSettingsModal } from './components/WorkstationSettingsModal';
 import { EscPosThermalPreviewModal } from './components/EscPosThermalPreviewModal';
 import { IdleLockModal } from './components/IdleLockModal';
-import { OfflineSyncDrawer } from './components/OfflineSyncDrawer';
-import { ConcurrencyChaosLabModal } from './components/ConcurrencyChaosLabModal';
 import { generateEscPosReceiptJob, EscPosJob } from './utils/formatters';
 
 import { CashierModule } from './modules/CashierModule';
@@ -41,7 +34,6 @@ import { UltrasoundModule } from './modules/UltrasoundModule';
 import { XRayModule } from './modules/XRayModule';
 import { PathologyModule } from './modules/PathologyModule';
 import { AdminModule } from './modules/AdminModule';
-import { WorkstationMeshModal } from './components/WorkstationMeshModal';
 import { Radio, X, CheckCircle, AlertTriangle, Info, Barcode, ShieldAlert } from 'lucide-react';
 
 interface ToastNotification {
@@ -70,12 +62,7 @@ export function App() {
 
   // Network condition & offline buffering
   const [networkMode, setNetworkMode] = useState<'online' | 'intermittent' | 'offline'>('online');
-  const [isSyncDrawerOpen, setIsSyncDrawerOpen] = useState<boolean>(false);
-  const [isWsDrawerOpen, setIsWsDrawerOpen] = useState<boolean>(false);
   const [isWorkstationModalOpen, setIsWorkstationModalOpen] = useState<boolean>(false);
-  const [isMeshModalOpen, setIsMeshModalOpen] = useState<boolean>(false);
-  const [isChaosLabOpen, setIsChaosLabOpen] = useState<boolean>(false);
-
   // Security & Screen Lock state
   const [isScreenLocked, setIsScreenLocked] = useState<boolean>(false);
   const lastActivityRef = useRef<number>(Date.now());
@@ -86,11 +73,6 @@ export function App() {
   // Thermal hardware preview modal state
   const [escPosJob, setEscPosJob] = useState<EscPosJob | null>(null);
 
-  // Guided workflows & roadmap
-  const [isRoadmapOpen, setIsRoadmapOpen] = useState<boolean>(false);
-  const [isPhase1Active, setIsPhase1Active] = useState<boolean>(false);
-  const [isPhase2Active, setIsPhase2Active] = useState<boolean>(false);
-  const [isPhase3Active, setIsPhase3Active] = useState<boolean>(false);
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
 
   // Print modal state
@@ -279,16 +261,9 @@ export function App() {
         onUserChange={setCurrentUser}
         allUsers={db.users}
         settings={db.settings}
-        isOnline={networkMode === 'online'}
-        networkMode={networkMode}
-        onOpenSyncDrawer={() => setIsSyncDrawerOpen(true)}
-        onOpenWsDrawer={() => setIsWsDrawerOpen(true)}
-        wsEventCount={db.webSocketEvents.length}
-        offlineQueueDepth={db.offlineQueue?.length || 0}
         currentWorkstation={currentWorkstation}
         onOpenWorkstationSettings={() => setIsWorkstationModalOpen(true)}
         onLockScreen={() => setIsScreenLocked(true)}
-        onOpenMeshDiagnostics={() => setIsMeshModalOpen(true)}
       />
 
       {/* Real-time Cross-Station Status Exchange HUD */}
@@ -299,32 +274,6 @@ export function App() {
           setCurrentRole(newRole);
           const u = db.users.find((user) => user.role === newRole);
           if (u) setCurrentUser(u);
-        }}
-        onOpenRoadmap={() => setIsRoadmapOpen(true)}
-        onOpenChaosLab={() => setIsChaosLabOpen(true)}
-        isPhase1Active={isPhase1Active}
-        onTogglePhase1Guide={() => {
-          setIsPhase1Active(!isPhase1Active);
-          if (!isPhase1Active) {
-            setIsPhase2Active(false);
-            setIsPhase3Active(false);
-          }
-        }}
-        isPhase2Active={isPhase2Active}
-        onTogglePhase2Guide={() => {
-          setIsPhase2Active(!isPhase2Active);
-          if (!isPhase2Active) {
-            setIsPhase1Active(false);
-            setIsPhase3Active(false);
-          }
-        }}
-        isPhase3Active={isPhase3Active}
-        onTogglePhase3Guide={() => {
-          setIsPhase3Active(!isPhase3Active);
-          if (!isPhase3Active) {
-            setIsPhase1Active(false);
-            setIsPhase2Active(false);
-          }
         }}
       />
 
@@ -345,75 +294,16 @@ export function App() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setIsSyncDrawerOpen(true)}
-              className="px-2 py-0.5 bg-black/30 hover:bg-black/40 text-white rounded text-[11px] underline"
-            >
-              Inspect Buffer ({db.offlineQueue?.length || 0})
-            </button>
-            <button
               onClick={() => {
                 setNetworkMode('online');
                 handleForceSync();
               }}
               className="px-2.5 py-0.5 bg-white text-slate-900 font-bold rounded text-[11px] hover:bg-slate-100"
             >
-              Restore & Sync
+              Restore & Sync ({db.offlineQueue?.length || 0})
             </button>
           </div>
         </div>
-      )}
-
-      {/* Phase 1 Live Interactive Guided Workflow Runner */}
-      {isPhase1Active && (
-        <Phase1GuidedRunner
-          db={db}
-          onUpdateDb={handleUpdateDb}
-          currentRole={currentRole}
-          onSwitchWorkstation={(newRole) => {
-            setCurrentRole(newRole);
-            const u = db.users.find((user) => user.role === newRole);
-            if (u) setCurrentUser(u);
-          }}
-          onPrint={(content) => handleThermalPrintRequest(content)}
-          broadcast={handleBroadcast}
-          onClose={() => setIsPhase1Active(false)}
-        />
-      )}
-
-      {/* Phase 2 Clinical Depth, Diagnostic Panels & MAR Runner */}
-      {isPhase2Active && (
-        <Phase2GuidedRunner
-          db={db}
-          onUpdateDb={handleUpdateDb}
-          currentRole={currentRole}
-          onSwitchWorkstation={(newRole) => {
-            setCurrentRole(newRole);
-            const u = db.users.find((user) => user.role === newRole);
-            if (u) setCurrentUser(u);
-          }}
-          onPrint={(content) => handleThermalPrintRequest(content)}
-          broadcast={handleBroadcast}
-          onClose={() => setIsPhase2Active(false)}
-        />
-      )}
-
-      {/* Phase 3 Executive Financial Audit, Reconciliation & LAN Resilience Runner */}
-      {isPhase3Active && (
-        <Phase3GuidedRunner
-          db={db}
-          onUpdateDb={handleUpdateDb}
-          currentRole={currentRole}
-          onSwitchWorkstation={(newRole) => {
-            setCurrentRole(newRole);
-            const u = db.users.find((user) => user.role === newRole);
-            if (u) setCurrentUser(u);
-          }}
-          onPrint={(content) => handleThermalPrintRequest(content)}
-          broadcast={handleBroadcast}
-          isOnline={networkMode === 'online'}
-          onToggleOnline={() => setNetworkMode(networkMode === 'online' ? 'offline' : 'online')}
-          onClose={() => setIsPhase3Active(false)}
-        />
       )}
 
       {/* Main Workstation Screen View */}
@@ -620,27 +510,12 @@ export function App() {
           setEscPosJob(testJob);
         }}
         onTestDrawerKick={() => {
-          clinicSocket.broadcast(
+          handleBroadcast(
             'PRINTER_SPOOL_UPDATE',
-            currentWorkstation.id,
+            currentWorkstation.name,
             'Cash Drawer Pulse Dispatched',
-            'ESC p 0 25 250 command pulsed to cash drawer.'
+            'ESC p 0 25 250 command pulsed to hardware cash drawer solenoid.'
           );
-          alert('Cash drawer solenoid pulse sent (ESC p 0 25 250).');
-        }}
-      />
-
-      {/* Offline Sync & Network Simulation Drawer */}
-      <OfflineSyncDrawer
-        isOpen={isSyncDrawerOpen}
-        onClose={() => setIsSyncDrawerOpen(false)}
-        isOnline={networkMode === 'online'}
-        networkMode={networkMode}
-        onSetNetworkMode={setNetworkMode}
-        offlineQueue={db.offlineQueue || []}
-        onForceSync={handleForceSync}
-        onClearQueue={() => {
-          handleUpdateDb((prev) => ({ ...prev, offlineQueue: [] }));
         }}
       />
 
@@ -664,82 +539,6 @@ export function App() {
         onConfirmOverride={(reason, authorizedBy) => {
           if (overrideConfirmCallback) {
             overrideConfirmCallback(reason, authorizedBy);
-          }
-        }}
-      />
-
-      {/* WebSocket Real-time Activity Drawer */}
-      <WebSocketActivityDrawer
-        isOpen={isWsDrawerOpen}
-        onClose={() => setIsWsDrawerOpen(false)}
-        events={db.webSocketEvents}
-        onClearEvents={() => {
-          handleUpdateDb((prev) => ({ ...prev, webSocketEvents: [] }));
-        }}
-        serverIp={db.settings.serverIp}
-      />
-
-      {/* Phased Architecture & Guided Roadmap Modal */}
-      <PhaseRoadmapModal
-        isOpen={isRoadmapOpen}
-        onClose={() => setIsRoadmapOpen(false)}
-        onSwitchWorkstation={(newRole) => {
-          setCurrentRole(newRole);
-          const u = db.users.find((user) => user.role === newRole);
-          if (u) setCurrentUser(u);
-        }}
-        onStartPhase1Workflow={() => {
-          setIsPhase1Active(true);
-          setIsPhase2Active(false);
-          setIsPhase3Active(false);
-          setCurrentRole('cashier');
-          const u = db.users.find((user) => user.role === 'cashier');
-          if (u) setCurrentUser(u);
-        }}
-        onStartPhase2Workflow={() => {
-          setIsPhase2Active(true);
-          setIsPhase1Active(false);
-          setIsPhase3Active(false);
-          setCurrentRole('nurse');
-          const u = db.users.find((user) => user.role === 'nurse');
-          if (u) setCurrentUser(u);
-        }}
-        onStartPhase3Workflow={() => {
-          setIsPhase3Active(true);
-          setIsPhase1Active(false);
-          setIsPhase2Active(false);
-          setCurrentRole('admin');
-          const u = db.users.find((user) => user.role === 'admin');
-          if (u) setCurrentUser(u);
-        }}
-      />
-
-      {/* Interactive Concurrency Chaos & Diagnostics Lab Modal */}
-      <ConcurrencyChaosLabModal
-        isOpen={isChaosLabOpen}
-        onClose={() => setIsChaosLabOpen(false)}
-        db={db}
-        onUpdateDb={handleUpdateDb}
-        onTriggerConflict={(conflict) => setConcurrencyConflict(conflict)}
-        broadcast={handleBroadcast}
-        onSetNetworkMode={setNetworkMode}
-      />
-
-      {/* Multi-PC Connection & LAN Mesh Diagnostic Modal */}
-      <WorkstationMeshModal
-        isOpen={isMeshModalOpen}
-        onClose={() => setIsMeshModalOpen(false)}
-        db={db}
-        onUpdateDb={handleUpdateDb}
-        currentWorkstation={currentWorkstation}
-        onSwitchWorkstation={(wsId) => {
-          const targetWs = db.workstations.find((w) => w.id === wsId);
-          if (targetWs) {
-            setCurrentWorkstation(targetWs);
-            setCurrentRole(targetWs.role);
-            const userForWs = db.users.find((u) => u.id === targetWs.assignedOperatorId) ||
-              db.users.find((u) => u.role === targetWs.role);
-            if (userForWs) setCurrentUser(userForWs);
           }
         }}
       />

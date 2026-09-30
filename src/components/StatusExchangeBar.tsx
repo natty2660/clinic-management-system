@@ -24,7 +24,7 @@ interface StatusExchangeBarProps {
   db: DatabaseState;
   currentRole: Role;
   onSwitchWorkstation: (role: Role) => void;
-  onOpenRoadmap: () => void;
+  onOpenRoadmap?: () => void;
   onOpenChaosLab?: () => void;
   isPhase1Active?: boolean;
   onTogglePhase1Guide?: () => void;
@@ -38,14 +38,6 @@ export const StatusExchangeBar: React.FC<StatusExchangeBarProps> = ({
   db,
   currentRole,
   onSwitchWorkstation,
-  onOpenRoadmap,
-  onOpenChaosLab,
-  isPhase1Active,
-  onTogglePhase1Guide,
-  isPhase2Active,
-  onTogglePhase2Guide,
-  isPhase3Active,
-  onTogglePhase3Guide,
 }) => {
   // Cashier metrics
   const unpaidChargesCount = db.charges.filter((c) => c.paymentStatus === 'pending').length;
@@ -243,68 +235,9 @@ export const StatusExchangeBar: React.FC<StatusExchangeBarProps> = ({
           </button>
         </div>
 
-        {/* Blueprint & Architecture Modal Launcher */}
-        <div className="shrink-0 flex items-center gap-2">
-          {onTogglePhase1Guide && (
-            <button
-              onClick={onTogglePhase1Guide}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold transition shadow-sm ${
-                isPhase1Active
-                  ? 'bg-teal-500 text-slate-950 hover:bg-teal-400'
-                  : 'bg-teal-950/80 hover:bg-teal-900 text-teal-300 border border-teal-700/60'
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>{isPhase1Active ? 'Phase 1 Active' : 'Start Phase 1'}</span>
-            </button>
-          )}
-
-          {onTogglePhase2Guide && (
-            <button
-              onClick={onTogglePhase2Guide}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold transition shadow-sm ${
-                isPhase2Active
-                  ? 'bg-purple-600 text-white hover:bg-purple-500'
-                  : 'bg-purple-950/80 hover:bg-purple-900 text-purple-300 border border-purple-700/60'
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
-              <span>{isPhase2Active ? 'Phase 2 Active' : 'Start Phase 2'}</span>
-            </button>
-          )}
-
-          {onTogglePhase3Guide && (
-            <button
-              onClick={onTogglePhase3Guide}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold transition shadow-sm ${
-                isPhase3Active
-                  ? 'bg-indigo-500 text-white hover:bg-indigo-400'
-                  : 'bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 border border-indigo-700/60'
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
-              <span>{isPhase3Active ? 'Phase 3 Active' : 'Start Phase 3'}</span>
-            </button>
-          )}
-
-          {onOpenChaosLab && (
-            <button
-              onClick={onOpenChaosLab}
-              className="flex items-center gap-1.5 px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 rounded-lg text-[11px] font-bold transition shadow-sm animate-pulse"
-              title="Interactive Multi-Desktop Concurrency & 409 Conflict Test Lab"
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-400" />
-              <span>Concurrency Chaos Lab</span>
-            </button>
-          )}
-
-          <button
-            onClick={onOpenRoadmap}
-            className="flex items-center gap-1.5 px-3 py-1 bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/40 rounded-lg text-[11px] font-bold transition shadow-sm"
-          >
-            <span>SPEED System Blueprint</span>
-            <ArrowRight className="w-3 h-3 text-teal-400" />
-          </button>
+        {/* System Info Tag */}
+        <div className="shrink-0 hidden xl:flex items-center text-[11px] text-slate-400 font-mono">
+          <span>SPEED Hospital Information System</span>
         </div>
       </div>
     </div>

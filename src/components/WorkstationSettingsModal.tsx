@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Laptop,
   Printer,
@@ -12,8 +12,19 @@ import {
   Play,
   RotateCcw,
   Sparkles,
+  Server,
+  Database,
+  RefreshCw,
+  Download,
+  AlertCircle,
 } from 'lucide-react';
 import { WorkstationConfig, ClinicSettings } from '../types/clinic';
+import {
+  getLanServerConfig,
+  saveLanServerConfig,
+  pingLanServer,
+  LanServerConfig,
+} from '../utils/lanDatabaseSync';
 
 interface WorkstationSettingsModalProps {
   isOpen: boolean;
@@ -41,16 +52,30 @@ export const WorkstationSettingsModal: React.FC<WorkstationSettingsModalProps> =
   const [scannerResult, setScannerResult] = useState('');
   const [isSavedNotice, setIsSavedNotice] = useState(false);
 
+  const [lanConfig, setLanConfig] = useState<LanServerConfig>(() => getLanServerConfig());
+  const [isPingingServer, setIsPingingServer] = useState(false);
+  const [pingResult, setPingResult] = useState<{ reachable?: boolean; latencyMs?: number; error?: string } | null>(null);
+
   React.useEffect(() => {
     setConfig(currentWorkstation);
+    setLanConfig(getLanServerConfig());
   }, [currentWorkstation]);
 
   if (!isOpen) return null;
 
   const handleSave = () => {
     onSaveWorkstation(config);
+    saveLanServerConfig(lanConfig);
     setIsSavedNotice(true);
     setTimeout(() => setIsSavedNotice(false), 2500);
+  };
+
+  const handleTestLanServer = async () => {
+    setIsPingingServer(true);
+    setPingResult(null);
+    const res = await pingLanServer(lanConfig);
+    setIsPingingServer(false);
+    setPingResult(res);
   };
 
   const handleSimulateScan = (code: string) => {
@@ -317,6 +342,119 @@ export const WorkstationSettingsModal: React.FC<WorkstationSettingsModalProps> =
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Central LAN Database Server Configuration */}
+          <div className="space-y-3 pt-2">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-1">
+              <h4 className="font-bold text-sm text-slate-200 flex items-center gap-1.5">
+                <Server className="w-4 h-4 text-cyan-400" />
+                <span>Central Clinic LAN Database Server (Multi-PC Master)</span>
+              </h4>
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={lanConfig.enabled}
+                    onChange={(e) => setLanConfig({ ...lanConfig, enabled: e.target.checked })}
+                    className="rounded text-cyan-500 focus:ring-0 focus:ring-offset-0 bg-slate-950 border-slate-700 w-4 h-4"
+                  />
+                  <span className="font-bold">Enable Master Server Sync</span>
+                </label>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-400">
+              When connected, this workstation synchronizes clinical records, cashier collections, and pharmacy stock with the dedicated clinic server (FastAPI/Node SQLite/PostgreSQL) over local LAN (WiFi or Ethernet).
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="text-slate-400 block mb-1">Server LAN IP Address</label>
+                <input
+                  type="text"
+                  value={lanConfig.hostIp}
+                  onChange={(e) => setLanConfig({ ...lanConfig, hostIp: e.target.value })}
+                  placeholder="192.168.1.100 or localhost"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white font-mono text-xs focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1">Port</label>
+                <input
+                  type="number"
+                  value={lanConfig.port}
+                  onChange={(e) => setLanConfig({ ...lanConfig, port: Number(e.target.value) })}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white font-mono text-xs focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1">Protocol & Encryption</label>
+                <select
+                  value={lanConfig.useHttps ? 'https' : 'http'}
+                  onChange={(e) => setLanConfig({ ...lanConfig, useHttps: e.target.value === 'https' })}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white text-xs focus:outline-none"
+                >
+                  <option value="http">HTTP (Standard LAN)</option>
+                  <option value="https">HTTPS (Local TLS / mkcert)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-slate-400 block mb-1">Station API Secret Key</label>
+                <input
+                  type="password"
+                  value={lanConfig.apiSecretToken}
+                  onChange={(e) => setLanConfig({ ...lanConfig, apiSecretToken: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-white font-mono text-xs focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1">Live Server Test</label>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleTestLanServer}
+                    disabled={isPingingServer}
+                    className="flex-1 px-3 py-2 bg-cyan-700 hover:bg-cyan-600 disabled:bg-slate-800 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isPingingServer ? 'animate-spin' : ''}`} />
+                    <span>{isPingingServer ? 'Pinging Host...' : 'Ping LAN Host'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {pingResult && (
+              <div
+                className={`p-2.5 rounded-lg text-xs flex items-center gap-2 ${
+                  pingResult.reachable
+                    ? 'bg-emerald-950/60 border border-emerald-700/60 text-emerald-200'
+                    : 'bg-amber-950/60 border border-amber-700/60 text-amber-200'
+                }`}
+              >
+                {pingResult.reachable ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>
+                      Host reachable! Response time: <strong className="font-mono">{pingResult.latencyMs}ms</strong>. Server is ready for multi-desktop sync.
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>
+                      Host unreachable ({pingResult.error || 'Connection failed'}). Workstation is operating in high-performance local peer-mesh / offline buffer mode.
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
